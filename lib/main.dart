@@ -1,7 +1,6 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
-import './user_model.dart';
-import 'dart:io';
 
 void main() {
   runApp(
@@ -14,95 +13,111 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              MaterialButton(
-                  onPressed: () async {
-                    await makeRequest(
-                        email: 'lordolumide@lord4.lord',
-                        username: 'lordolfdmide4',
-                        password: '12345678',
-                        password2: '12345678');
-                  },
-                  child: const Text('Post Request')),
-            ],
-          ),
+    return const MaterialApp(
+      home: HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final double containerWidth = MediaQuery.of(context).size.width - 50;
+    const double containerHeight = 450;
+
+    return Scaffold(
+      body: Center(
+        child: JotterContainer(
+          width: containerWidth,
+          height: containerHeight,
+          child: Text('Home Indeed'),
         ),
       ),
     );
   }
 }
 
-Future<User> makeRequest({
-  required String email,
-  required String username,
-  required String password,
-  required String password2,
-}) async {
-  BaseOptions options = BaseOptions(
-    baseUrl: 'https://flirtbox.gtsresource.com',
-    contentType: Headers.formUrlEncodedContentType,
-  );
-  final Dio dio = Dio(options);
+class JotterContainer extends StatelessWidget {
+  final double width;
+  final double height;
+  final Widget? child;
 
-  Response? response;
-  Map<String, String> requestBody = {
-    'email': email,
-    'username': username,
-    'password': password,
-    'password2': password2
-  };
-  try {
-    response = await dio.post(
-      '/signup_person',
-      data: requestBody,
+  const JotterContainer({
+    super.key,
+    required this.width,
+    required this.height,
+    this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: width,
+            height: height,
+            child: CustomPaint(
+              painter: JotterContainerPainter(),
+            ),
+          ),
+          child ?? const SizedBox(),
+        ],
+      ),
     );
-    print('Request completed');
-  } on DioError catch (e) {
-    if (e.response != null) {
-      print('kmfovrnf');
-      print(e.response!.data);
-      print('=====');
-      print(e.error);
-      print('=====');
-      print(e.response!.headers);
-      print('=====');
-      print(e.response!.requestOptions);
-    } else {
-      print('vinro');
-      // Something happened in setting up or sending the request that triggered an Error
-      print(e.requestOptions);
-      print(e.message);
-    }
-    if (e.error is SocketException) {
-      throw Exception(
-        'Check your internet and try again',
+  }
+}
+
+class JotterContainerPainter extends CustomPainter {
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const double notchDiameter = 4;
+    final int noOfNotches = size.width ~/ 16;
+    final double notchSpacing = 
+        (size.width - (noOfNotches * notchDiameter)) / (noOfNotches - 1);
+
+    final paint = Paint()
+      ..color = Colors.pink[200] as Color
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    // Origin at TopLeft corner
+    path.moveTo(0, 0);
+    // Algo for top notches
+    double currentXPosition = 0;
+    for (int i = 0; i < noOfNotches; i++) {
+      path.addArc(
+        Rect.fromCenter(
+          center: Offset(currentXPosition + (notchDiameter / 2), 0),
+          width: notchDiameter, 
+          height: notchDiameter),
+        pi, 
+        0,
       );
-    } else if (e.response != null) {
-      throw Exception('Error occurred');
-    } else {
-      print(e);
-      print(e.stackTrace);
-      print(e.message);
-      rethrow;
+      currentXPosition += notchSpacing;
+      path.lineTo(currentXPosition, 0);
     }
-  } catch (e) {
-    print('Network Helper catching error: $e');
-    throw Exception(e);
+    // Top right edge
+    path.lineTo(size.width, 0);
+    // Bottom right edge
+    path.lineTo(size.width, size.height);
+    // Algo for bottom notches
+    //
+    //
+    // Bottom left edge
+    path.lineTo(0, size.height);
+    // Back to top left
+    path.lineTo(0, 0);
+
+    canvas.drawPath(path, paint);
   }
 
-  print('Here');
-  if (response.statusCode == 201) {
-    final Map<String, dynamic> responseMap = response.data;
-
-    print('Here22');
-    return User.fromJson(responseMap);
-  } else {
-    print('Response : ${response.data}');
-    throw Exception(response.data.toString());
-  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
