@@ -1,108 +1,131 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
-import './user_model.dart';
-import 'dart:io';
+import 'package:go_router/go_router.dart';
 
 void main() {
-  runApp(
-    const MyApp(),
-  );
+  runApp(const MyApp());
 }
+
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _homeNavKey = GlobalKey<NavigatorState>();
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              MaterialButton(
-                  onPressed: () async {
-                    await makeRequest(
-                        email: 'lordolumide@lord4.lord',
-                        username: 'lordolfdmide4',
-                        password: '12345678',
-                        password2: '12345678');
-                  },
-                  child: const Text('Post Request')),
+    return MaterialApp.router(
+      routerConfig: GoRouter(
+        navigatorKey: _rootNavigatorKey,
+        initialLocation: '/home',
+        routes: [
+          ShellRoute(
+            navigatorKey: _homeNavKey,
+            builder: (context, state, child) => Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 60),
+                  child: child,
+                ),
+                // Bottom nav bar
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(height: 60, color: Colors.red),
+                ),
+              ],
+            ),
+            routes: [
+              GoRoute(
+                path: '/home',
+                parentNavigatorKey: _homeNavKey,
+                builder: (context, state) => const MainView(),
+              ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-Future<User> makeRequest({
-  required String email,
-  required String username,
-  required String password,
-  required String password2,
-}) async {
-  BaseOptions options = BaseOptions(
-    baseUrl: 'https://flirtbox.gtsresource.com',
-    contentType: Headers.formUrlEncodedContentType,
-  );
-  final Dio dio = Dio(options);
+class MainView extends StatefulWidget {
+  const MainView({super.key});
 
-  Response? response;
-  Map<String, String> requestBody = {
-    'email': email,
-    'username': username,
-    'password': password,
-    'password2': password2
-  };
-  try {
-    response = await dio.post(
-      '/signup_person',
-      data: requestBody,
+  @override
+  State<MainView> createState() => _MainViewState();
+}
+
+class _MainViewState extends State<MainView> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: _scaffoldKey,
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            _scaffoldKey.currentState?.openDrawer();
+          },
+          child: const Text('Open drawer'),
+        ),
+      ),
+      drawer: const CustomDrawer(),
     );
-    print('Request completed');
-  } on DioError catch (e) {
-    if (e.response != null) {
-      print('kmfovrnf');
-      print(e.response!.data);
-      print('=====');
-      print(e.error);
-      print('=====');
-      print(e.response!.headers);
-      print('=====');
-      print(e.response!.requestOptions);
-    } else {
-      print('vinro');
-      // Something happened in setting up or sending the request that triggered an Error
-      print(e.requestOptions);
-      print(e.message);
-    }
-    if (e.error is SocketException) {
-      throw Exception(
-        'Check your internet and try again',
-      );
-    } else if (e.response != null) {
-      throw Exception('Error occurred');
-    } else {
-      print(e);
-      print(e.stackTrace);
-      print(e.message);
-      rethrow;
-    }
-  } catch (e) {
-    print('Network Helper catching error: $e');
-    throw Exception(e);
+  }
+}
+
+class CustomDrawer extends StatelessWidget {
+  const CustomDrawer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 200,
+      color: Colors.white,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ElevatedButton(
+            onPressed: () => onOpenDialogPressed(context),
+            child: const Text('Open dialog'),
+          ),
+        ],
+      ),
+    );
   }
 
-  print('Here');
-  if (response.statusCode == 201) {
-    final Map<String, dynamic> responseMap = response.data;
+  Future<void> onOpenDialogPressed(BuildContext context) async {
+    late final bool? value;
 
-    print('Here22');
-    return User.fromJson(responseMap);
-  } else {
-    print('Response : ${response.data}');
-    throw Exception(response.data.toString());
+    if (context.mounted) {
+      value = await showDialog(
+        context: context,
+        builder: (context) {
+          return Dialog(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(
+                  onPressed: () => context.pop(false),
+                  child: const Text('Pop with "false"'),
+                ),
+                ElevatedButton(
+                  onPressed: () => context.pop(true),
+                  child: const Text('Pop with "true"'),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+    print('Value is: $value');
+    if (value == null) {
+      return;
+    }
+
+    if (context.mounted) {
+      print("Run more async functions");
+    }
   }
 }
