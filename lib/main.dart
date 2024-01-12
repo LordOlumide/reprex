@@ -16,28 +16,29 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       routerConfig: GoRouter(
         navigatorKey: _rootNavigatorKey,
-        initialLocation: '/home',
+        initialLocation: '/',
+        redirect: (context, state) {
+          return null;
+        },
         routes: [
           ShellRoute(
             navigatorKey: _homeNavKey,
-            builder: (context, state, child) => Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 60),
-                  child: child,
-                ),
-                // Bottom nav bar
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Container(height: 60, color: Colors.red),
-                ),
-              ],
-            ),
+            builder: (context, state, child) => child,
             routes: [
               GoRoute(
-                path: '/home',
+                path: '/',
                 parentNavigatorKey: _homeNavKey,
-                builder: (context, state) => const MainView(),
+                builder: (context, state) => const HomeView(),
+              ),
+              GoRoute(
+                path: '/screen1',
+                parentNavigatorKey: _homeNavKey,
+                onExit: (context) {
+                  print('================= Exiting ========================');
+                  context.go('/');
+                  return true;
+                },
+                builder: (context, state) => const Screen1(),
               ),
             ],
           ),
@@ -47,85 +48,36 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MainView extends StatefulWidget {
-  const MainView({super.key});
-
-  @override
-  State<MainView> createState() => _MainViewState();
-}
-
-class _MainViewState extends State<MainView> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+class HomeView extends StatelessWidget {
+  const HomeView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
       body: Center(
         child: ElevatedButton(
-          onPressed: () {
-            _scaffoldKey.currentState?.openDrawer();
-          },
-          child: const Text('Open drawer'),
+          onPressed: () => context.go('/screen1'),
+          child: const Text('Go forward'),
         ),
       ),
-      drawer: const CustomDrawer(),
     );
   }
 }
 
-class CustomDrawer extends StatelessWidget {
-  const CustomDrawer({super.key});
+class Screen1 extends StatelessWidget {
+  const Screen1({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 200,
-      color: Colors.white,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            onPressed: () => onOpenDialogPressed(context),
-            child: const Text('Open dialog'),
-          ),
-        ],
+    return WillPopScope(
+      onWillPop: () async {
+        print('============ onWillPop triggered ================');
+        context.go('/');
+        return false;
+      },
+      child: const Scaffold(
+        backgroundColor: Colors.green,
       ),
     );
-  }
-
-  Future<void> onOpenDialogPressed(BuildContext context) async {
-    late final bool? value;
-
-    if (context.mounted) {
-      value = await showDialog(
-        context: context,
-        builder: (context) {
-          return Dialog(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton(
-                  onPressed: () => context.pop(false),
-                  child: const Text('Pop with "false"'),
-                ),
-                ElevatedButton(
-                  onPressed: () => context.pop(true),
-                  child: const Text('Pop with "true"'),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    }
-    print('Value is: $value');
-    if (value == null) {
-      return;
-    }
-
-    if (context.mounted) {
-      print("Run more async functions");
-    }
   }
 }
